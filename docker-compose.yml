@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8080"
+    env_file:
+      - .env.local
+    environment:
+      - GOOGLE_CLOUD_PROJECT=${PROJECT_ID}
+      - GOOGLE_CLOUD_REGION=${REGION}
+      - VERTEX_AI_LOCATION=${REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json
+    volumes:
+      - ${APPDATA}/gcloud:/root/.config/gcloud:ro
+      - ./backend/service-account.json:/app/service-account.json:ro
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:8080"
+    env_file:
+      - .env.local
+    environment:
+      - BACKEND_URL=http://backend:8080
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:8080
+      - NEXTAUTH_URL=http://localhost:3000
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

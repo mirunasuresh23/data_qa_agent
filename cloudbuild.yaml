@@ -1,0 +1,70 @@
+steps:
+  # 1. Build Backend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '$_REGISTRY/$_PROJECT_ID/$_BACKEND_SERVICE:latest', 'backend/']
+
+  # 2. Push Backend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$_REGISTRY/$_PROJECT_ID/$_BACKEND_SERVICE:latest']
+
+  # 3. Deploy Backend
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run deploy $_BACKEND_SERVICE \
+          --image "$_REGISTRY/$_PROJECT_ID/$_BACKEND_SERVICE:latest" \
+          --region $_REGION \
+          --platform managed \
+          --allow-unauthenticated \
+          --set-env-vars "GOOGLE_CLOUD_PROJECT=$_PROJECT_ID,GOOGLE_CLOUD_REGION=$_REGION,VERTEX_AI_LOCATION=$_REGION" \
+          --quiet
+
+  # 4. Get Backend URL, Build & Push Frontend
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Looking up Backend URL..."
+        BACKEND_URL=$(gcloud run services describe $_BACKEND_SERVICE --region=$_REGION --project=$_PROJECT_ID --format='value(status.url)')
+        
+        if [ -z "$$BACKEND_URL" ]; then
+          echo "ERROR: Could not find URL for backend service $_BACKEND_SERVICE"
+          exit 1
+        fi
+        echo "Found Backend URL: $$BACKEND_URL"
+        
+        echo "Building Frontend..."
+        docker build -t "$_REGISTRY/$_PROJECT_ID/$_SERVICE_NAME:latest" \
+          --build-arg BACKEND_URL="$$BACKEND_URL" .
+        
+        echo "Pushing Frontend..."
+        docker push "$_REGISTRY/$_PROJECT_ID/$_SERVICE_NAME:latest"
+
+  # 5. Deploy Frontend
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        BACKEND_URL=$(gcloud run services describe $_BACKEND_SERVICE --region=$_REGION --project=$_PROJECT_ID --format='value(status.url)')
+        
+        gcloud run deploy $_SERVICE_NAME \
+          --image "$_REGISTRY/$_PROJECT_ID/$_SERVICE_NAME:latest" \
+          --region $_REGION \
+          --platform managed \
+          --allow-unauthenticated \
+          --set-env-vars "BACKEND_URL=$$BACKEND_URL,NEXT_PUBLIC_BACKEND_URL=$$BACKEND_URL,NEXT_PUBLIC_GOOGLE_CLOUD_PROJECT=$_PROJECT_ID,NEXT_PUBLIC_GOOGLE_CLOUD_REGION=$_REGION" \
+          --quiet
+
+substitutions:
+  _PROJECT_ID: miruna-sandpit
+  _REGION: australia-southeast1
+  _SERVICE_NAME: data-qa-agent-frontend-combined
+  _BACKEND_SERVICE: data-qa-agent-backend-combined
+  _REGISTRY: gcr.io
+
+options:
+  logging: CLOUD_LOGGING_ONLY
