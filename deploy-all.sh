@@ -34,21 +34,19 @@ sync_yaml_files() {
     echo -e "${BLUE}Syncing cloudbuild.yaml files with deploy.config...${NC}"
 
     # Update frontend cloudbuild.yaml
-    if [ -f "${SCRIPT_DIR}/cloudbuild.frontend.yaml" ]; then
+    if [ -f "${SCRIPT_DIR}/cloudbuild-frontend.yaml" ]; then
         sed -i.bak \
             -e "s/_SERVICE_NAME:.*/_SERVICE_NAME: $FRONTEND_SERVICE/" \
-            -e "s/_REGISTRY:.*/_REGISTRY: $REGISTRY/" \
-            "${SCRIPT_DIR}/cloudbuild.frontend.yaml"
-        echo -e "${GREEN}✓ Synced cloudbuild.frontend.yaml${NC}"
+            "${SCRIPT_DIR}/cloudbuild-frontend.yaml"
+        echo -e "${GREEN}✓ Synced cloudbuild-frontend.yaml${NC}"
     fi
 
     # Update backend cloudbuild.yaml
-    if [ -f "${SCRIPT_DIR}/cloudbuild.backend.yaml" ]; then
+    if [ -f "${SCRIPT_DIR}/cloudbuild-backend.yaml" ]; then
         sed -i.bak \
             -e "s/_SERVICE_NAME:.*/_SERVICE_NAME: $BACKEND_SERVICE/" \
-            -e "s/_REGION:.*/_REGION: $REGION/" \
-            "${SCRIPT_DIR}/cloudbuild.backend.yaml"
-        echo -e "${GREEN}✓ Synced cloudbuild.backend.yaml${NC}"
+            "${SCRIPT_DIR}/cloudbuild-backend.yaml"
+        echo -e "${GREEN}✓ Synced cloudbuild-backend.yaml${NC}"
     fi
 }
 
@@ -194,12 +192,12 @@ if [ "$DEPLOY_BACKEND" = true ]; then
     echo -e "${YELLOW}========================================${NC}"
 
     echo "Building and deploying backend with Cloud Build..."
-    
-    # Cloud Build handles: build image → push to Artifact Registry → deploy to Cloud Run
+
     gcloud builds submit \
-        --config cloudbuild.backend.yaml \
+        --config cloudbuild-backend.yaml \
         --project $PROJECT_ID \
-        --substitutions="_SERVICE_NAME=$BACKEND_SERVICE,_REGION=$REGION" \
+        --region $REGION \
+        --substitutions="_SERVICE_NAME=$BACKEND_SERVICE" \
         --quiet
 
     BACKEND_URL=$(gcloud run services describe $BACKEND_SERVICE \
@@ -236,25 +234,13 @@ if [ "$DEPLOY_FRONTEND" = true ]; then
         fi
     fi
 
-    echo "Building frontend with backend URL: $BACKEND_URL"
-    
-    # Build the image with Cloud Build, passing the backend URL as a build arg
-    echo "Step 1: Building container image..."
+    echo "Building and deploying frontend with backend URL: $BACKEND_URL"
+
     gcloud builds submit \
-        --config cloudbuild.frontend.yaml \
+        --config cloudbuild-frontend.yaml \
         --project $PROJECT_ID \
-        --substitutions="_REGISTRY=$REGISTRY,_SERVICE_NAME=$FRONTEND_SERVICE,_BACKEND_URL=$BACKEND_URL,_NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL" \
-        --quiet
-    
-    # Deploy the pre-built image
-    echo "Step 2: Deploying to Cloud Run..."
-    gcloud run deploy $FRONTEND_SERVICE \
-        --image "$REGISTRY/$PROJECT_ID/$FRONTEND_SERVICE:latest" \
-        --platform managed \
         --region $REGION \
-        --allow-unauthenticated \
-        --project $PROJECT_ID \
-        --set-env-vars "BACKEND_URL=$BACKEND_URL,NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL,NEXT_PUBLIC_GOOGLE_CLOUD_PROJECT=$PROJECT_ID,NEXT_PUBLIC_GOOGLE_CLOUD_REGION=$REGION" \
+        --substitutions="_SERVICE_NAME=$FRONTEND_SERVICE,_BACKEND_URL=$BACKEND_URL" \
         --quiet
 
     FRONTEND_URL=$(gcloud run services describe $FRONTEND_SERVICE \
