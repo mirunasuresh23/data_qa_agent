@@ -30,6 +30,3 @@ Thumbs.db
 backend/service-account.json
 service-account.json
 *.json.local
-
-# Backup files
-*.bak

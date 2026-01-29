@@ -1,8 +1,8 @@
 steps:
   # 1. Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '--build-arg', 'BACKEND_URL=$_BACKEND_URL', '-t', '$LOCATION-docker.pkg.dev/$PROJECT_ID/agent-repo/$_SERVICE_NAME:latest', '.']
-    # Frontend Dockerfile is in root, so default dir is fine
+    args: ['build', '--build-arg', 'BACKEND_URL=$_BACKEND_URL', '-t', '$LOCATION-docker.pkg.dev/$PROJECT_ID/agent-repo/$_SERVICE_NAME:latest','-f','Dockerfile', '.']
+    # Build context set to the frontend agent folder where package.json lives
 
   # 2. Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
