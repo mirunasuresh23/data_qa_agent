@@ -33,7 +33,7 @@ steps:
       - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_REGION=$LOCATION'
 
 substitutions:
-  _SERVICE_NAME: data-qa-agent-backend
+  _SERVICE_NAME: data-qa-agent-backend-combined
 
 images:
   - '$LOCATION-docker.pkg.dev/$PROJECT_ID/agent-repo/$_SERVICE_NAME:latest'
