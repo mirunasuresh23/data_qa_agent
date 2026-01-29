@@ -26,7 +26,7 @@ steps:
       - 'BACKEND_URL=$_BACKEND_URL,NEXT_PUBLIC_BACKEND_URL=$_BACKEND_URL,NEXT_PUBLIC_GOOGLE_CLOUD_PROJECT=$PROJECT_ID,NEXT_PUBLIC_GOOGLE_CLOUD_REGION=$LOCATION'
 
 substitutions:
-    _SERVICE_NAME: data-qa-agent-frontend-combined
+    _SERVICE_NAME: data-qa-agent-frontend
 
 images:
   - '$LOCATION-docker.pkg.dev/$PROJECT_ID/agent-repo/$_SERVICE_NAME:latest'
