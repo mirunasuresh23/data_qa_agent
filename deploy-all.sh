@@ -51,7 +51,7 @@ sync_yaml_files() {
 }
 
 # Automatically sync YAML files before deployment
-# sync_yaml_files  # Disabled - manually maintain YAML files
+sync_yaml_files
 
 # Parse arguments
 FORCE_OAUTH=false
