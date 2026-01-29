@@ -3,11 +3,11 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '--build-arg'
-      - 'BACKEND_URL=$_BACKEND_URL'
       - '-t'
       - '$LOCATION-docker.pkg.dev/$PROJECT_ID/agent-repo/$_SERVICE_NAME:latest'
-      - '.'
+      - '-f'
+      - 'agents/quality_assurance_agent/backend/Dockerfile'
+      - 'agents/quality_assurance_agent/backend'
 
   # 2. Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -30,10 +30,10 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--set-env-vars'
-      - 'BACKEND_URL=$_BACKEND_URL,NEXT_PUBLIC_BACKEND_URL=$_BACKEND_URL,NEXT_PUBLIC_GOOGLE_CLOUD_PROJECT=$PROJECT_ID,NEXT_PUBLIC_GOOGLE_CLOUD_REGION=$LOCATION'
+      - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_REGION=$LOCATION'
 
 substitutions:
-  _SERVICE_NAME: data-qa-agent-frontend
+  _SERVICE_NAME: data-qa-agent-backend
 
 images:
   - '$LOCATION-docker.pkg.dev/$PROJECT_ID/agent-repo/$_SERVICE_NAME:latest'
